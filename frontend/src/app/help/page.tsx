@@ -25,7 +25,7 @@ export default function HelpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { isRecording, audioBase64, startRecording, stopRecording } = useVoiceRecorder();
+  const { isRecording, audioBase64, startRecording, stopRecording, error: voiceError } = useVoiceRecorder();
 
   const handleSubmit = async () => {
     setError('');
@@ -186,9 +186,9 @@ export default function HelpPage() {
         </div>
 
         {/* Error */}
-        {error && (
+        {(error || voiceError) && (
           <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg mb-4">
-            {error}
+            {error || voiceError}
           </div>
         )}
 
