@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import VoiceButton from '@/components/VoiceButton';
@@ -25,7 +25,14 @@ export default function HelpPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { isRecording, audioBase64, startRecording, stopRecording, error: voiceError } = useVoiceRecorder();
+  const { isRecording, audioBase64, startRecording, stopRecording } = useVoiceRecorder();
+
+  // Auto-submit when audio is ready
+  useEffect(() => {
+    if (audioBase64 && !loading) {
+      handleSubmit();
+    }
+  }, [audioBase64]);
 
   const handleSubmit = async () => {
     setError('');
@@ -186,9 +193,9 @@ export default function HelpPage() {
         </div>
 
         {/* Error */}
-        {(error || voiceError) && (
+        {error && (
           <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg mb-4">
-            {error || voiceError}
+            {error}
           </div>
         )}
 

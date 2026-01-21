@@ -31,20 +31,9 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       chunksRef.current = [];
       
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      // Check for supported mimeType with fallback
-      let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = 'audio/mp4';
-          if (!MediaRecorder.isTypeSupported(mimeType)) {
-            mimeType = ''; // Use browser default
-          }
-        }
-      }
-      
-      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
