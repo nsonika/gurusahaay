@@ -86,6 +86,12 @@ export async function getCurrentUser() {
   return apiFetch<Teacher>('/auth/me');
 }
 
+export async function updateLanguagePreference(language: string) {
+  return apiFetch<Teacher>(`/auth/me/language?language=${language}`, {
+    method: 'PATCH',
+  });
+}
+
 // Concepts APIs
 export async function getConcepts(language?: string) {
   const params = language ? `?language=${language}` : '';

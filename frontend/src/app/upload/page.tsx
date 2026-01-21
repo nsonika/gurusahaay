@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { uploadFileToCloudinary, getConcepts, Concept, checkCloudinaryStatus, getRecentHelpRequests, HelpRequestDetail, suggestTopic, createTopicWithTranslations, getAIStatus } from '@/lib/api';
-import { ArrowLeft, Video, FileText, Upload, Loader2, CheckCircle, AlertCircle, HelpCircle, Clock, ChevronRight, Sparkles, Plus } from 'lucide-react';
+import { uploadFileToCloudinary, checkCloudinaryStatus, getRecentHelpRequests, HelpRequestDetail, suggestTopic, createTopicWithTranslations } from '@/lib/api';
+import { ArrowLeft, Video, FileText, Upload, Loader2, CheckCircle, AlertCircle, HelpCircle, Clock, ChevronRight } from 'lucide-react';
 import BottomNav from '@/components/BottomNav';
 
 export default function UploadPage() {
@@ -12,7 +12,7 @@ export default function UploadPage() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const [contentType, setContentType] = useState<'video' | 'document'>('video');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -20,101 +20,17 @@ export default function UploadPage() {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [concepts, setConcepts] = useState<Concept[]>([]);
   const [cloudinaryReady, setCloudinaryReady] = useState<boolean | null>(null);
   const [helpRequests, setHelpRequests] = useState<HelpRequestDetail[]>([]);
   const [loadingHelp, setLoadingHelp] = useState(true);
-  const [aiAvailable, setAiAvailable] = useState(false);
-  const [suggestingTopic, setSuggestingTopic] = useState(false);
-  const [aiSuggestion, setAiSuggestion] = useState<{
-    matched_topic_id: string | null;
-    matched_topic_name: string | null;
-    confidence: number;
-    suggested_new_topic: string | null;
-    suggested_new_topic_id: string | null;
-    suggested_new_topic_hi?: string | null;
-    suggested_new_topic_kn?: string | null;
-    synonyms_en?: string[];
-    synonyms_hi?: string[];
-    synonyms_kn?: string[];
-  } | null>(null);
-  const [creatingTopic, setCreatingTopic] = useState(false);
   const [selectedHelpRequestId, setSelectedHelpRequestId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchConcepts();
     checkCloudinary();
     fetchHelpRequests();
-    checkAI();
   }, []);
 
-  const checkAI = async () => {
-    try {
-      const status = await getAIStatus();
-      setAiAvailable(status.available);
-    } catch (err) {
-      setAiAvailable(false);
-    }
-  };
 
-  const handleSuggestTopic = async () => {
-    if (!title.trim()) return;
-    
-    setSuggestingTopic(true);
-    setAiSuggestion(null);
-    
-    try {
-      const result = await suggestTopic(title, description);
-      setAiSuggestion(result);
-      
-      // Auto-select if high confidence match
-      if (result.matched_topic_id && result.confidence >= 0.7) {
-        setConceptId(result.matched_topic_id);
-      }
-    } catch (err) {
-      console.error('Failed to suggest topic:', err);
-    } finally {
-      setSuggestingTopic(false);
-    }
-  };
-
-  const handleCreateNewTopic = async () => {
-    if (!aiSuggestion?.suggested_new_topic_id || !aiSuggestion?.suggested_new_topic) return;
-    
-    setCreatingTopic(true);
-    
-    try {
-      await createTopicWithTranslations(
-        aiSuggestion.suggested_new_topic_id,
-        aiSuggestion.suggested_new_topic,
-        aiSuggestion.suggested_new_topic_hi || undefined,
-        aiSuggestion.suggested_new_topic_kn || undefined,
-        aiSuggestion.synonyms_en || [],
-        aiSuggestion.synonyms_hi || [],
-        aiSuggestion.synonyms_kn || []
-      );
-      
-      // Refresh concepts and select the new one
-      await fetchConcepts();
-      setConceptId(aiSuggestion.suggested_new_topic_id);
-      setAiSuggestion(null);
-    } catch (err) {
-      console.error('Failed to create topic:', err);
-      setError('Failed to create new topic');
-    } finally {
-      setCreatingTopic(false);
-    }
-  };
-
-  const fetchConcepts = async () => {
-    try {
-      const language = user?.language_preference || 'en';
-      const data = await getConcepts(language);
-      setConcepts(data);
-    } catch (err) {
-      console.error('Failed to fetch concepts:', err);
-    }
-  };
 
   const checkCloudinary = async () => {
     try {
@@ -146,7 +62,7 @@ export default function UploadPage() {
   };
 
   const handleSubmit = async () => {
-    if (!selectedFile || !title.trim() || !conceptId) {
+    if (!selectedFile || !title.trim()) {
       setError('Please fill in all required fields');
       return;
     }
@@ -155,10 +71,42 @@ export default function UploadPage() {
     setError(null);
 
     try {
+      let finalConceptId = conceptId;
+
+      // If no concept selected (which is expected now), try to auto-suggest
+      if (!finalConceptId) {
+        // 1. Suggest Topic
+        const suggestion = await suggestTopic(title, description);
+
+        if (suggestion.matched_topic_id) {
+          finalConceptId = suggestion.matched_topic_id;
+        } else if (suggestion.suggested_new_topic && suggestion.suggested_new_topic_id) {
+          // 2. Create New Topic if needed
+          await createTopicWithTranslations(
+            suggestion.suggested_new_topic_id,
+            suggestion.suggested_new_topic,
+            suggestion.suggested_new_topic_hi || undefined,
+            suggestion.suggested_new_topic_kn || undefined,
+            suggestion.synonyms_en || [],
+            suggestion.synonyms_hi || [],
+            suggestion.synonyms_kn || []
+          );
+
+          finalConceptId = suggestion.suggested_new_topic_id;
+        } else {
+          throw new Error('Could not automatically determine a topic. Please try a more descriptive title.');
+        }
+      }
+
+      if (!finalConceptId) {
+        throw new Error('Failed to determine topic.');
+      }
+
+      // 3. Upload File
       await uploadFileToCloudinary({
         file: selectedFile,
         title: title.trim(),
-        concept_id: conceptId,
+        concept_id: finalConceptId,
         content_type: contentType,
         description: description.trim(),
         language: user?.language_preference || 'en',
@@ -167,6 +115,7 @@ export default function UploadPage() {
 
       router.push('/community?tab=uploads');
     } catch (err) {
+      console.error('Upload flow failed:', err);
       setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
       setLoading(false);
@@ -194,7 +143,7 @@ export default function UploadPage() {
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffHours < 1) return 'just now';
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays === 1) return '1 day ago';
@@ -232,7 +181,7 @@ export default function UploadPage() {
             <p className="text-sm text-gray-500 mb-3">
               Teachers are looking for help on these topics. Upload content to help them!
             </p>
-            
+
             <div className="space-y-2">
               {loadingHelp ? (
                 <div className="flex justify-center py-4">
@@ -245,15 +194,13 @@ export default function UploadPage() {
                     <button
                       key={request.id}
                       onClick={() => handleHelpRequestClick(request)}
-                      className={`w-full rounded-xl border p-3 flex items-center gap-3 transition-colors text-left ${
-                        isSelected 
-                          ? 'bg-orange-50 border-orange-400 ring-2 ring-orange-200' 
-                          : 'bg-white hover:border-orange-300'
-                      }`}
+                      className={`w-full rounded-xl border p-3 flex items-center gap-3 transition-colors text-left ${isSelected
+                        ? 'bg-orange-50 border-orange-400 ring-2 ring-orange-200'
+                        : 'bg-white hover:border-orange-300'
+                        }`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        isSelected ? 'bg-orange-500' : 'bg-orange-100'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isSelected ? 'bg-orange-500' : 'bg-orange-100'
+                        }`}>
                         {isSelected ? (
                           <CheckCircle className="w-5 h-5 text-white" />
                         ) : (
@@ -295,29 +242,27 @@ export default function UploadPage() {
 
         {/* Content Type Selection */}
         <p className="text-sm text-gray-500 mb-3">What are you uploading?</p>
-        
+
         <div className="grid grid-cols-2 gap-4 mb-4">
           <button
             onClick={() => setContentType('video')}
-            className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
-              contentType === 'video'
-                ? 'border-orange-300 bg-orange-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
+            className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${contentType === 'video'
+              ? 'border-orange-300 bg-orange-50'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
           >
             <Video className={`w-6 h-6 ${contentType === 'video' ? 'text-orange-600' : 'text-gray-500'}`} />
             <span className={`text-sm font-medium ${contentType === 'video' ? 'text-gray-900' : 'text-gray-600'}`}>
               Video
             </span>
           </button>
-          
+
           <button
             onClick={() => setContentType('document')}
-            className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${
-              contentType === 'document'
-                ? 'border-orange-300 bg-orange-50'
-                : 'border-gray-200 bg-white hover:border-gray-300'
-            }`}
+            className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${contentType === 'document'
+              ? 'border-orange-300 bg-orange-50'
+              : 'border-gray-200 bg-white hover:border-gray-300'
+              }`}
           >
             <FileText className={`w-6 h-6 ${contentType === 'document' ? 'text-orange-600' : 'text-gray-500'}`} />
             <span className={`text-sm font-medium ${contentType === 'document' ? 'text-gray-900' : 'text-gray-600'}`}>
@@ -338,7 +283,7 @@ export default function UploadPage() {
         )}
 
         {/* File Upload Area */}
-        <div 
+        <div
           onClick={() => fileInputRef.current?.click()}
           className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-gray-400 transition-colors bg-white mb-4"
         >
@@ -349,7 +294,7 @@ export default function UploadPage() {
             onChange={handleFileSelect}
             className="hidden"
           />
-          
+
           {selectedFile ? (
             <div>
               <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -380,129 +325,17 @@ export default function UploadPage() {
             value={title}
             onChange={(e) => {
               setTitle(e.target.value);
-              setAiSuggestion(null);
             }}
             placeholder="e.g., Water Cycle Explanation Video"
             className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-300"
           />
-          
-          {/* AI Suggest Button */}
-          {aiAvailable && title.trim() && (
-            <button
-              onClick={handleSuggestTopic}
-              disabled={suggestingTopic}
-              className="mt-2 flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium"
-            >
-              {suggestingTopic ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Finding best topic...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  Auto-suggest topic with AI
-                </>
-              )}
-            </button>
-          )}
+
+
         </div>
 
-        {/* AI Suggestion Result */}
-        {aiSuggestion && (
-          <div className="bg-purple-50 rounded-2xl p-4 border border-purple-200 mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-purple-600" />
-              <span className="text-sm font-medium text-purple-800">AI Suggestion</span>
-            </div>
-            
-            {aiSuggestion.matched_topic_id && aiSuggestion.confidence >= 0.7 ? (
-              <div>
-                <p className="text-sm text-purple-700">
-                  Best match: <strong>{aiSuggestion.matched_topic_name}</strong>
-                </p>
-                <p className="text-xs text-purple-500 mt-1">
-                  Confidence: {Math.round(aiSuggestion.confidence * 100)}%
-                </p>
-                {conceptId !== aiSuggestion.matched_topic_id && (
-                  <button
-                    onClick={() => setConceptId(aiSuggestion.matched_topic_id!)}
-                    className="mt-2 text-sm bg-purple-600 text-white px-3 py-1 rounded-lg hover:bg-purple-700"
-                  >
-                    Use this topic
-                  </button>
-                )}
-                {conceptId === aiSuggestion.matched_topic_id && (
-                  <p className="mt-2 text-xs text-green-600 flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3" /> Topic selected
-                  </p>
-                )}
-              </div>
-            ) : aiSuggestion.suggested_new_topic ? (
-              <div>
-                <p className="text-sm text-purple-700 mb-2">
-                  No good match found. Suggested new topic:
-                </p>
-                <div className="bg-white rounded-lg p-3 border border-purple-200 mb-2">
-                  <p className="text-sm font-medium text-purple-900">
-                    🇬🇧 {aiSuggestion.suggested_new_topic}
-                  </p>
-                  {aiSuggestion.suggested_new_topic_hi && (
-                    <p className="text-sm text-purple-700 mt-1">
-                      🇮🇳 {aiSuggestion.suggested_new_topic_hi}
-                    </p>
-                  )}
-                  {aiSuggestion.suggested_new_topic_kn && (
-                    <p className="text-sm text-purple-700 mt-1">
-                      ಕ {aiSuggestion.suggested_new_topic_kn}
-                    </p>
-                  )}
-                </div>
-                <p className="text-xs text-purple-500 mb-2">
-                  Will add translations for multilingual search
-                </p>
-                <button
-                  onClick={handleCreateNewTopic}
-                  disabled={creatingTopic}
-                  className="flex items-center gap-2 text-sm bg-purple-600 text-white px-3 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50"
-                >
-                  {creatingTopic ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Creating with translations...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      Create this topic
-                    </>
-                  )}
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm text-purple-600">
-                Could not determine a topic. Please select manually.
-              </p>
-            )}
-          </div>
-        )}
 
-        {/* Topic Selection */}
-        <div className="bg-white rounded-2xl p-4 border mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Topic *</label>
-          <select
-            value={conceptId}
-            onChange={(e) => setConceptId(e.target.value)}
-            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:border-orange-300 bg-white"
-          >
-            <option value="">Select a topic...</option>
-            {concepts.map((concept) => (
-              <option key={concept.concept_id} value={concept.concept_id}>
-                {concept.description || concept.description_en}
-              </option>
-            ))}
-          </select>
-        </div>
+
+
 
         {/* Description Input */}
         <div className="bg-white rounded-2xl p-4 border mb-4">
@@ -525,17 +358,16 @@ export default function UploadPage() {
         {/* Submit Button */}
         <button
           onClick={handleSubmit}
-          disabled={loading || !selectedFile || !title.trim() || !conceptId || cloudinaryReady === false}
-          className={`w-full py-4 rounded-2xl font-medium transition-all flex items-center justify-center gap-2 ${
-            selectedFile && title.trim() && conceptId && cloudinaryReady !== false
-              ? 'bg-orange-400 hover:bg-orange-500 text-white'
-              : 'bg-orange-200 text-orange-400 cursor-not-allowed'
-          }`}
+          disabled={loading || !selectedFile || !title.trim() || cloudinaryReady === false}
+          className={`w-full py-4 rounded-2xl font-medium transition-all flex items-center justify-center gap-2 ${selectedFile && title.trim() && cloudinaryReady !== false
+            ? 'bg-orange-400 hover:bg-orange-500 text-white'
+            : 'bg-orange-200 text-orange-400 cursor-not-allowed'
+            }`}
         >
           {loading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Uploading to cloud...
+              Processing & Uploading...
             </>
           ) : (
             'Publish Content'

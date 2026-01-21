@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import Header from '@/components/Header';
 import { getCommunityFeed, getPoints, Content, PointsResponse } from '@/lib/api';
 import { Upload, Award, TrendingUp, HelpCircle, Clock, MessageCircle, ArrowRight, RefreshCw } from 'lucide-react';
@@ -13,6 +14,7 @@ type FeedTab = 'all' | 'help_needed';
 
 export default function HomePage() {
   const { user, loading } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [feed, setFeed] = useState<Content[]>([]);
   const [points, setPoints] = useState<PointsResponse | null>(null);
@@ -41,7 +43,7 @@ export default function HomePage() {
   const fetchFeed = async (showRefresh = false) => {
     if (showRefresh) setRefreshing(true);
     else setFeedLoading(true);
-    
+
     try {
       const data = await getCommunityFeed(activeTab, 10);
       setFeed(data);
@@ -59,11 +61,11 @@ export default function HomePage() {
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
-    
-    if (diffHours < 1) return 'just now';
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'yesterday';
-    return `${diffDays} days ago`;
+
+    if (diffHours < 1) return t('common.justNow');
+    if (diffHours < 24) return t('common.hoursAgo', { count: diffHours });
+    if (diffDays === 1) return t('common.yesterday');
+    return t('common.daysAgo', { count: diffDays });
   };
 
   if (loading || !user) {
@@ -75,22 +77,22 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-cream pb-20">
       <Header title="GuruSahaay" />
-      
+
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Welcome */}
         <div className="card bg-gradient-to-r from-primary-600 to-primary-700 text-white">
-          <h2 className="text-lg font-semibold">Welcome, {user.name}!</h2>
+          <h2 className="text-lg font-semibold">{t('home.welcomeMessage', { name: user.name })}</h2>
           <p className="text-primary-100 text-sm mt-1">
-            How can we help you today?
+            {t('home.helpPrompt')}
           </p>
           <Link
             href="/help"
             className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white text-primary-600 rounded-lg font-medium hover:bg-primary-50 transition-colors"
           >
             <HelpCircle className="w-5 h-5" />
-            Get Help Now
+            {t('home.getHelpNow')}
           </Link>
         </div>
 
@@ -102,21 +104,21 @@ export default function HomePage() {
                 <Upload className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Upload</h3>
-                <p className="text-xs text-gray-500">Share content</p>
+                <h3 className="font-medium text-gray-900">{t('home.uploadTitle')}</h3>
+                <p className="text-xs text-gray-500">{t('home.shareContent')}</p>
               </div>
             </div>
           </Link>
-          
+
           <Link href="/profile" className="card hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
                 <Award className="w-5 h-5 text-yellow-600" />
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">Points</h3>
+                <h3 className="font-medium text-gray-900">{t('home.pointsTitle')}</h3>
                 <p className="text-xs text-gray-500">
-                  {points ? `${points.total_points} pts` : 'Loading...'}
+                  {points ? `${points.total_points} pts` : t('common.loading')}
                 </p>
               </div>
             </div>
@@ -128,7 +130,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary-600" />
-              Community Feed
+              {t('home.communityFeed')}
             </h2>
             <button
               onClick={() => fetchFeed(true)}
@@ -136,7 +138,7 @@ export default function HomePage() {
               className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              {t('common.refresh')}
             </button>
           </div>
 
@@ -144,26 +146,24 @@ export default function HomePage() {
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => setActiveTab('all')}
-              className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-colors ${
-                activeTab === 'all'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-colors ${activeTab === 'all'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
-              All
+              {t('common.all')}
             </button>
             <button
               onClick={() => setActiveTab('help_needed')}
-              className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-colors ${
-                activeTab === 'help_needed'
-                  ? 'bg-gray-900 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`flex-1 py-2 px-4 rounded-full text-sm font-medium transition-colors ${activeTab === 'help_needed'
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
             >
-              Help Needed
+              {t('common.helpNeeded')}
             </button>
           </div>
-          
+
           {feedLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
@@ -182,9 +182,8 @@ export default function HomePage() {
                     {/* Header */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          isHelpRequest ? 'bg-orange-100' : 'bg-green-100'
-                        }`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isHelpRequest ? 'bg-orange-100' : 'bg-green-100'
+                          }`}>
                           <HelpCircle className={`w-5 h-5 ${isHelpRequest ? 'text-orange-500' : 'text-green-500'}`} />
                         </div>
                         <span className="font-medium text-gray-900">
@@ -196,36 +195,35 @@ export default function HomePage() {
                         {formatTimeAgo(item.created_at)}
                       </div>
                     </div>
-                    
+
                     {/* Category Tag */}
                     <div className="mb-2">
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                        isHelpRequest 
-                          ? 'bg-amber-100 text-amber-700' 
-                          : 'bg-green-100 text-green-700'
-                      }`}>
-                        {isHelpRequest ? 'Help Needed' : 'Upload'}
+                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${isHelpRequest
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-green-100 text-green-700'
+                        }`}>
+                        {isHelpRequest ? t('common.helpNeeded') : t('common.upload')}
                       </span>
                     </div>
-                    
+
                     {/* Content */}
                     <h3 className="text-lg font-medium text-gray-900 mb-3">
                       &quot;{item.title}&quot;
                     </h3>
-                    
+
                     {/* Footer */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 text-gray-500 text-sm">
                         <MessageCircle className="w-4 h-4" />
-                        0 responses
+                        {t('community.responses', { count: 0 })}
                       </div>
-                      
+
                       {isHelpRequest ? (
                         <button
                           onClick={() => router.push(`/help-request/${item.id}`)}
                           className="flex items-center gap-1 text-orange-600 font-medium text-sm hover:text-orange-700"
                         >
-                          Help out
+                          {t('community.helpOut')}
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       ) : (
@@ -233,7 +231,7 @@ export default function HomePage() {
                           onClick={() => router.push(`/content/${item.id}`)}
                           className="flex items-center gap-1 text-green-600 font-medium text-sm hover:text-green-700"
                         >
-                          View Content
+                          {t('community.viewContent')}
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       )}
@@ -245,12 +243,12 @@ export default function HomePage() {
           ) : (
             <div className="card text-center py-8">
               <p className="text-gray-500">
-                {activeTab === 'help_needed' 
-                  ? 'No help requests yet.' 
-                  : 'No content yet. Be the first to upload!'}
+                {activeTab === 'help_needed'
+                  ? t('home.noHelpRequests')
+                  : t('home.noContent')}
               </p>
               <Link href={activeTab === 'help_needed' ? '/help' : '/upload'} className="btn-primary inline-block mt-4">
-                {activeTab === 'help_needed' ? 'Ask for Help' : 'Upload Content'}
+                {activeTab === 'help_needed' ? t('home.askForHelp') : t('home.uploadContent')}
               </Link>
             </div>
           )}

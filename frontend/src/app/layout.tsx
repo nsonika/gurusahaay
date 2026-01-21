@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
+import { LanguageProvider } from '@/context/LanguageContext'
 import BottomNav from '@/components/BottomNav'
 
 export const metadata: Metadata = {
@@ -16,10 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen pb-20">
+      <body className="min-h-screen bg-cream  pb-20">
         <AuthProvider>
-          {children}
-          <BottomNav />
+          <LanguageProvider>
+            {children}
+            <BottomNav />
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

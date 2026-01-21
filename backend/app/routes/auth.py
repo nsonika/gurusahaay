@@ -97,3 +97,24 @@ def get_me(current_teacher: Teacher = Depends(get_current_teacher)):
     Get current authenticated teacher's profile.
     """
     return current_teacher
+
+
+@router.patch("/me/language", response_model=TeacherResponse)
+def update_language(
+    language: str,
+    current_teacher: Teacher = Depends(get_current_teacher),
+    db: Session = Depends(get_db)
+):
+    """
+    Update current teacher's language preference.
+    """
+    if language not in ["en", "kn", "hi"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid language. Must be 'en', 'kn', or 'hi'"
+        )
+    
+    current_teacher.language_preference = language
+    db.commit()
+    db.refresh(current_teacher)
+    return current_teacher
