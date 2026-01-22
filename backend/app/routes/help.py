@@ -80,7 +80,11 @@ def create_help_request(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Speech recognition not available"
             )
-        query_text, detected_language = SpeechService.transcribe_audio(request.audio_base64)
+        language_hint = current_teacher.language_preference
+        query_text, detected_language = SpeechService.transcribe_audio(
+            request.audio_base64, 
+            language_hint=language_hint
+        )
     
     if not query_text:
         raise HTTPException(
@@ -90,11 +94,9 @@ def create_help_request(
     
     # CRITICAL: Resolve to concept_id
     # This is the core of the multilingual search system
-    concept_id, language, normalized_text = ConceptResolver.resolve_concept(db, query_text)
-    
-    # Use detected language from speech if available
-    if detected_language:
-        language = detected_language
+    concept_id, language, normalized_text = ConceptResolver.resolve_concept(
+        db, query_text, speech_language=detected_language
+    )
     
     # Store help request for analytics
     help_request = HelpRequest(

@@ -140,9 +140,10 @@ export async function addHelpResponse(helpRequestId: string, data: {
 }
 
 // Suggestions APIs
-export async function getSuggestions(conceptId: string, language?: string) {
+export async function getSuggestions(conceptId: string, language?: string, problemSummary?: string) {
   const params = new URLSearchParams({ concept_id: conceptId });
   if (language) params.append('language', language);
+  if (problemSummary) params.append('problem_description', problemSummary);
   return apiFetch<SuggestionResponse>(`/suggestions?${params.toString()}`);
 }
 
@@ -434,6 +435,7 @@ export interface Content {
   created_at: string;
   feedback_score?: number;
   uploader_name?: string;
+  ai_summary?: string;
   likes_count?: number;
   views_count?: number;
   user_liked?: boolean;

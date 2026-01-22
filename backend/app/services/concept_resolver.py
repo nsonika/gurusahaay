@@ -165,13 +165,14 @@ class ConceptResolver:
         return text
     
     @staticmethod
-    def resolve_concept(db: Session, text: str) -> Tuple[Optional[str], str, str]:
+    def resolve_concept(db: Session, text: str, speech_language: Optional[str] = None) -> Tuple[Optional[str], str, str]:
         """
         Main resolution function.
         
         Args:
             db: Database session
             text: User input in any language
+            speech_language: Optional language detected by speech engine
             
         Returns:
             Tuple of (concept_id, detected_language, normalized_text)
@@ -179,6 +180,14 @@ class ConceptResolver:
         """
         # Step 1: Detect language
         language = ConceptResolver.detect_language(text)
+        
+        # If script detection says "en" but speech engine detected "kn" or "hi",
+        # it's likely transliterated text (Hinglish/Kanglish).
+        # In this case, trust the speech engine.
+        if language == "en" and speech_language in ["kn", "hi"]:
+            language = speech_language
+            print(f"[ConceptResolver] Overriding script language 'en' with speech language '{language}' (Transliteration detected)")
+            
         print(f"[ConceptResolver] Input: '{text}' | Language: {language}")
         
         # Step 2: Normalize text

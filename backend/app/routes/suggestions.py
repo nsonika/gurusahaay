@@ -29,6 +29,7 @@ router = APIRouter(prefix="/suggestions", tags=["Suggestions"])
 def get_suggestions(
     concept_id: str = Query(..., description="The resolved concept ID"),
     language: Optional[str] = Query(None, description="Language override"),
+    problem_description: Optional[str] = Query(None, description="Detailed problem context from teacher"),
     limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher)
@@ -65,7 +66,8 @@ def get_suggestions(
         db,
         concept_id,
         target_lang,
-        limit
+        limit,
+        problem_description
     )
     
     # Build response
@@ -88,8 +90,8 @@ def get_suggestions(
                 source_type=content.source_type,
                 is_verified=content.is_verified,
                 created_at=content.created_at,
-                feedback_score=item["feedback_score"],
-                uploader_name=item["uploader_name"]
+                uploader_name=item["uploader_name"],
+                ai_summary=content.ai_summary
             ))
             source = item["source"]
     else:
@@ -115,8 +117,8 @@ def get_suggestions(
                 source_type=content.source_type,
                 is_verified=content.is_verified,
                 created_at=content.created_at,
-                feedback_score=0,
-                uploader_name="Google Search"
+                uploader_name="Google Search",
+                ai_summary=content.ai_summary
             ))
     
     # Add warning message for unverified content

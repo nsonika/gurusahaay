@@ -35,6 +35,7 @@ class ContentResponse(BaseModel):
     # Computed fields for display
     feedback_score: Optional[float] = None
     uploader_name: Optional[str] = None
+    ai_summary: Optional[str] = None
     likes_count: int = 0
     views_count: int = 0
     user_liked: bool = False

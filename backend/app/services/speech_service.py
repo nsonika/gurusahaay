@@ -50,12 +50,13 @@ class SpeechService:
     """
     
     @staticmethod
-    def transcribe_audio(audio_base64: str) -> Tuple[str, str]:
+    def transcribe_audio(audio_base64: str, language_hint: str = None) -> Tuple[str, str]:
         """
         Transcribe base64-encoded audio to text.
         
         Args:
             audio_base64: Base64 encoded audio data
+            language_hint: Optional language code hint (en, kn, hi)
             
         Returns:
             Tuple of (transcribed_text, detected_language)
@@ -76,10 +77,18 @@ class SpeechService:
         try:
             model = get_whisper_model()
             
-            # Transcribe with language detection
+            # Map our hint to Whisper language codes
+            whisper_lang = None
+            if language_hint == "kn":
+                whisper_lang = "kn"
+            elif language_hint == "hi":
+                whisper_lang = "hi"
+            
+            # Transcribe with language detection/hint
             result = model.transcribe(
                 tmp_path,
                 task="transcribe",
+                language=whisper_lang
             )
             
             text = result["text"].strip()

@@ -36,6 +36,7 @@ class UploadedContent(Base):
     title = Column(Text, nullable=False)
     content_url = Column(Text)  # URL or file path
     description = Column(Text)  # Brief summary
+    ai_summary = Column(Text)   # AI-generated teacher-friendly summary
     
     # Source tracking
     source_type = Column(Text, default="internal")  # internal, external

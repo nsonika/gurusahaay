@@ -96,7 +96,7 @@ class GeminiService:
             raise e
 
     @staticmethod
-    def google_web_search(query: str, num_results: int = 5) -> List[dict]:
+    def google_web_search(query: str, num_results: int = 5, problem_description: str = None) -> List[dict]:
         """
         Use Google Search via Gemini API to find educational content.
         
@@ -107,10 +107,14 @@ class GeminiService:
             return []
         
         try:
+            search_query = f"educational resources about {query}"
+            if problem_description:
+                search_query += f" specifically help for: {problem_description}"
+                
             # Use google_search tool with Gemini
             data = {
                 "contents": [{
-                    "parts": [{"text": f"Find {num_results} educational resources (videos, articles, websites) about: {query}. For each result, provide the title, URL, and a brief description. Focus on educational content suitable for teachers and students."}]
+                    "parts": [{"text": f"Find {num_results} {search_query}. For each result, provide the title, URL, and a brief description. Focus on educational content suitable for teachers and students."}]
                 }],
                 "tools": [{
                     "google_search": {}
@@ -396,3 +400,48 @@ Rules:
                 "search_keywords": [query],
                 "error": str(e)
             }
+
+    @staticmethod
+    def generate_summary(
+        title: str,
+        snippet: str,
+        topic: str = None,
+        problem_description: str = None
+    ) -> str:
+        """
+        Generate a teacher-friendly summary for a suggested resource.
+        
+        Args:
+            title: Title of the resource
+            snippet: Search snippet or context
+            topic: The concept/topic name
+            problem_description: Specific problem context provided by teacher
+            
+        Returns:
+            A concise, high-quality summary
+        """
+        if not GeminiService.is_available():
+            return snippet or "No summary available."
+            
+        try:
+            prompt = f"""You are an expert educational consultant helping teachers in India.
+Write a concise, teacher-friendly summary (2-3 sentences) explaining how an educational resource directly solves a teacher's specific classroom problem.
+
+Resource Title: {title}
+Resource Context: {snippet}
+{f'Core Topic: {topic}' if topic else ''}
+{f"Teacher's Specific Problem: {problem_description}" if problem_description else ""}
+
+Rules:
+1. FOCUS: If a specific problem is provided, the summary MUST explain how this resource solves THAT specific problem. 
+2. AVOID: Do not waste words describing the platform (e.g., "Khan Academy offers videos"). Instead, say "This resource helps you explain [Topic] using [Method] to address [Problem]".
+3. DEPTH: Mention specific features or content (from the snippet) that are relevant to the problem.
+4. TONE: Professional, practical, and highly encouraging.
+5. CONCISENESS: Under 60 words. No intro/outro.
+
+Summary:"""
+            
+            return GeminiService._call_gemini(prompt).strip()
+        except Exception as e:
+            print(f"[GeminiService] Summary generation failed: {e}")
+            return snippet or "No summary available."

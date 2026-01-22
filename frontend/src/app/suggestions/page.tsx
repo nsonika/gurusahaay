@@ -35,7 +35,7 @@ export default function SuggestionsPage() {
     const languageOverride = searchParams.get('lang') || undefined;
 
     Promise.all([
-      getSuggestions(conceptId, languageOverride),
+      getSuggestions(conceptId, languageOverride, problemSummary),
       getConcept(conceptId)
     ])
       .then(([suggestionsData, conceptData]) => {
@@ -276,9 +276,19 @@ function SolutionCard({ content, index, onTry, showFeedback = true }: {
         {/* Title */}
         <h3 className="font-semibold text-gray-900 mb-2">{content.title}</h3>
 
-        {/* Description */}
-        {content.description && (
-          <p className="text-sm text-gray-600 leading-relaxed">
+        {/* Description / AI Summary */}
+        {content.ai_summary ? (
+          <div className="mt-2 p-3 bg-orange-50 rounded-xl border border-orange-100 relative overflow-hidden">
+            <div className="absolute top-0 right-0 px-2 py-0.5 bg-orange-200 text-orange-700 text-[10px] font-bold uppercase rounded-bl-lg flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5" />
+              Smart Summary
+            </div>
+            <p className="text-sm text-gray-700 leading-relaxed pt-1">
+              {content.ai_summary}
+            </p>
+          </div>
+        ) : content.description && (
+          <p className="text-sm text-gray-600 leading-relaxed mt-2">
             {content.description}
           </p>
         )}

@@ -15,6 +15,7 @@ import uuid
 
 from app.models.content import UploadedContent, ContentFeedback, ContentInteraction
 from app.models.teacher import Teacher
+from app.models.concept import Concept
 from app.services.gemini_service import GeminiService
 
 
@@ -30,7 +31,8 @@ class ContentService:
         db: Session,
         concept_id: str,
         teacher_language: str = "en",
-        limit: int = 10
+        limit: int = 10,
+        problem_description: Optional[str] = None
     ) -> Tuple[List[UploadedContent], str]:
         """
         Get content suggestions for a concept.
@@ -114,7 +116,11 @@ class ContentService:
         
         # Step 4: Use Google Web Search via Gemini to find external content
         print(f"[ContentService] No content found for '{concept_id}', trying Google Web Search...")
-        search_results = GeminiService.google_web_search(concept_id.replace("_", " "), num_results=5)
+        search_results = GeminiService.google_web_search(
+            concept_id.replace("_", " "), 
+            num_results=5,
+            problem_description=problem_description
+        )
         
         if search_results:
             # Create/Get content entries from search results
@@ -130,6 +136,17 @@ class ContentService:
                 ).first()
                 
                 if existing_content:
+                    # If we have a specific problem description, re-generate summary even for existing content
+                    # to ensure it's tailored to the current session.
+                    if problem_description:
+                        # Re-generate summary dynamically (won't persist to DB unless explicit save)
+                        # This gives a "session-aware" summary
+                        existing_content.ai_summary = GeminiService.generate_summary(
+                            title=existing_content.title,
+                            snippet=existing_content.description,
+                            topic=concept_id.replace("_", " ").title(),
+                            problem_description=problem_description
+                        )
                     web_content.append(existing_content)
                     continue
 
@@ -140,14 +157,30 @@ class ContentService:
                 elif url.endswith(".pdf"):
                     content_type = "document"
                 
+                # Get concept details for subject and grade
+                concept = db.query(Concept).filter(Concept.concept_id == concept_id).first()
+                subject = concept.subject if concept else "General"
+                grade = concept.grade if concept else "All"
+
+                # Generate AI summary for better teacher experience
+                ai_summary = GeminiService.generate_summary(
+                    title=result.get("title", "External Resource"),
+                    snippet=result.get("snippet", ""),
+                    topic=concept_id.replace("_", " ").title(),
+                    problem_description=problem_description
+                )
+
                 # Persist new content (without specific uploader)
                 new_content = UploadedContent(
                     id=uuid.uuid4(), # Explicitly setting UUID or letting DB handle it
                     title=result.get("title", "External Resource"),
                     description=result.get("snippet", "Found via Google Search"),
+                    ai_summary=ai_summary,
                     content_type=content_type,
                     content_url=url,
                     concept_id=concept_id,
+                    subject=subject,
+                    grade=grade,
                     language="en", # Default to English for external content
                     source_type="external",
                     is_verified=False,
@@ -174,14 +207,15 @@ class ContentService:
         db: Session,
         concept_id: str,
         teacher_language: str = "en",
-        limit: int = 10
+        limit: int = 10,
+        problem_description: Optional[str] = None
     ) -> List[dict]:
         """
         Get content with computed feedback scores.
         Returns dictionaries with content and score.
         """
         content_list, source = ContentService.get_suggestions(
-            db, concept_id, teacher_language, limit
+            db, concept_id, teacher_language, limit, problem_description
         )
         
         # For Google Search results, return directly without DB queries

@@ -11,6 +11,8 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     restart: unless-stopped
+    volumes:
+      - ./backend:/app
 
   seed:
     build:
