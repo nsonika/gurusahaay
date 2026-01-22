@@ -11,6 +11,7 @@ GuruSahaay helps teachers get quick, actionable suggestions for classroom proble
 - Get suggestions from verified teacher content
 - Upload helpful content for peers
 - Earn points and rewards
+- **Installable PWA**: Can be installed on mobile devices
 
 ## Architecture
 
@@ -90,6 +91,23 @@ cp .env.local.example .env.local
 # Run development server
 npm run dev
 ```
+
+## Docker Setup
+
+If you have Docker and Docker Compose installed, you can start the entire stack (PostgreSQL, Backend, and Frontend) with a single command:
+
+```bash
+# Start all services
+docker-compose up -d
+
+# Seed the database (required first time)
+docker-compose exec backend python -m scripts.seed_data
+```
+
+The services will be available at:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:8000
+- Database: localhost:5432 (internal for services)
 
 ### Access the Application
 
