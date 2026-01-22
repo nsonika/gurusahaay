@@ -12,16 +12,16 @@ export default function SuggestionsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  
+
   const conceptId = searchParams.get('concept_id');
   const problemSummary = searchParams.get('summary') || '';
-  
+
   const [suggestions, setSuggestions] = useState<SuggestionResponse | null>(null);
   const [concept, setConcept] = useState<Concept | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [helpPosted, setHelpPosted] = useState(false);
-  
+
   // Feedback modal state
   const [feedbackContent, setFeedbackContent] = useState<Content | null>(null);
 
@@ -31,8 +31,11 @@ export default function SuggestionsPage() {
       return;
     }
 
+    setLoading(true);
+    const languageOverride = searchParams.get('lang') || undefined;
+
     Promise.all([
-      getSuggestions(conceptId),
+      getSuggestions(conceptId, languageOverride),
       getConcept(conceptId)
     ])
       .then(([suggestionsData, conceptData]) => {
@@ -92,7 +95,7 @@ export default function SuggestionsPage() {
           </h1>
         </div>
       </div>
-      
+
       <main className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Problem Summary Card */}
         <div className="bg-amber-50 rounded-2xl p-4 border border-amber-100">
@@ -111,31 +114,30 @@ export default function SuggestionsPage() {
 
         {/* External Content Warning */}
         {(suggestions?.source === 'external_fallback' || suggestions?.source === 'google_search') && (
-          <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+          <div className="bg-red-50 rounded-2xl p-4 border border-red-100 border-dashed">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <Globe className="w-4 h-4 text-blue-600" />
+              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                <AlertCircle className="w-4 h-4 text-red-600" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-blue-800">
-                  {suggestions?.source === 'google_search' 
-                    ? '🔍 Found via Google Search' 
-                    : 'Found suggestions from YouTube/Web'}
+                <p className="text-sm font-medium text-gray-900">
+                  Found suggestions from YouTube/Web only
                 </p>
-                <p className="text-xs text-blue-600 mt-0.5">
-                  These are external resources. Post to community for teacher-verified content!
+                <p className="text-xs text-gray-500 mt-0.5 mb-3">
+                  Post to community - other teachers can help you!
                 </p>
                 {helpPosted ? (
-                  <div className="mt-3 flex items-center gap-2 text-green-700 text-sm">
+                  <div className="flex items-center gap-2 text-green-700 text-sm py-2 px-4 bg-green-50 rounded-full w-fit">
                     <CheckCircle className="w-4 h-4" />
-                    Posted to community! Teachers will respond soon.
+                    Posted to community!
                   </div>
                 ) : (
-                  <button 
+                  <button
                     onClick={() => {
                       setHelpPosted(true);
+                      // TODO: Call API to create help request
                     }}
-                    className="mt-3 flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
                   >
                     <Users className="w-4 h-4" />
                     Post to Help Needed
@@ -157,11 +159,12 @@ export default function SuggestionsPage() {
         {suggestions && suggestions.suggestions.length > 0 ? (
           <div className="space-y-4">
             {suggestions.suggestions.map((content, index) => (
-              <SolutionCard 
-                key={content.id} 
-                content={content} 
+              <SolutionCard
+                key={content.id}
+                content={content}
                 index={index + 1}
                 onTry={() => setFeedbackContent(content)}
+                showFeedback={false} // Don't show motivational message inside card logic for now
               />
             ))}
           </div>
@@ -174,7 +177,7 @@ export default function SuggestionsPage() {
             <p className="text-sm text-gray-500 mb-4">
               Be the first to share helpful content for this topic!
             </p>
-            
+
             {/* Post to Help Needed */}
             {helpPosted ? (
               <div className="flex items-center justify-center gap-2 text-green-700 text-sm mb-4">
@@ -182,7 +185,7 @@ export default function SuggestionsPage() {
                 Posted to community! Teachers will respond soon.
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => {
                   setHelpPosted(true);
                 }}
@@ -192,7 +195,7 @@ export default function SuggestionsPage() {
                 Post to Help Needed
               </button>
             )}
-            
+
             <button
               onClick={() => router.push('/upload')}
               className="btn-primary"
@@ -215,20 +218,25 @@ export default function SuggestionsPage() {
 }
 
 // Solution Card Component matching the reference design
-function SolutionCard({ content, index, onTry }: { content: Content; index: number; onTry: () => void }) {
+function SolutionCard({ content, index, onTry, showFeedback = true }: {
+  content: Content;
+  index: number;
+  onTry: () => void;
+  showFeedback?: boolean;
+}) {
   const router = useRouter();
   const isYouTube = content.content_url?.includes('youtube') || content.content_url?.includes('youtu.be');
   const isInternal = content.source_type === 'internal';
   const difficulty = 'Easy'; // Could be derived from content metadata
   const duration = content.content_type === 'video' ? '10 min' : '5 min';
-  
+
   // Motivational messages
   const motivationalMessages = [
     "You're doing a great job making complex science simple for your students. Keep up the amazing work!",
     "Your dedication to finding creative solutions inspires your students every day!",
     "Great teachers like you make learning memorable. Your students are lucky!",
   ];
-  
+
   return (
     <div className="bg-white rounded-2xl border overflow-hidden">
       {/* Header with badges */}
@@ -256,15 +264,18 @@ function SolutionCard({ content, index, onTry }: { content: Content; index: numb
           <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
             {difficulty}
           </span>
+          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium uppercase">
+            {content.language}
+          </span>
           <span className="flex items-center gap-1 text-gray-500 text-xs ml-auto">
             <Clock className="w-3 h-3" />
             {duration}
           </span>
         </div>
-        
+
         {/* Title */}
         <h3 className="font-semibold text-gray-900 mb-2">{content.title}</h3>
-        
+
         {/* Description */}
         {content.description && (
           <p className="text-sm text-gray-600 leading-relaxed">
@@ -272,28 +283,35 @@ function SolutionCard({ content, index, onTry }: { content: Content; index: numb
           </p>
         )}
       </div>
-      
+
       {/* Action Button */}
       <div className="px-4 pb-4">
         {isInternal ? (
-          <button 
+          <button
             onClick={() => router.push(`/content/${content.id}`)}
             className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-colors"
           >
             View Content
           </button>
         ) : (
-          <button 
-            onClick={onTry}
-            className="w-full py-3 bg-orange-500 hover:bg-orange-600 text-white font-medium rounded-xl transition-colors"
+          <button
+            onClick={() => {
+              if (content.content_url) {
+                window.open(content.content_url, '_blank');
+              }
+            }}
+            className="w-full py-3 bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 text-white font-medium rounded-xl transition-all shadow-sm shadow-orange-200 flex items-center justify-center gap-2"
           >
             Try in next class
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
           </button>
         )}
       </div>
-      
+
       {/* Motivational Message (show on some cards) */}
-      {index === 2 && (
+      {showFeedback && index === 2 && (
         <div className="mx-4 mb-4 p-3 bg-green-50 rounded-xl">
           <p className="text-sm text-green-700 text-center italic">
             {motivationalMessages[index % motivationalMessages.length]}

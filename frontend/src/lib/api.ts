@@ -34,7 +34,7 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
+
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
   }
@@ -140,8 +140,10 @@ export async function addHelpResponse(helpRequestId: string, data: {
 }
 
 // Suggestions APIs
-export async function getSuggestions(conceptId: string) {
-  return apiFetch<SuggestionResponse>(`/suggestions?concept_id=${conceptId}`);
+export async function getSuggestions(conceptId: string, language?: string) {
+  const params = new URLSearchParams({ concept_id: conceptId });
+  if (language) params.append('language', language);
+  return apiFetch<SuggestionResponse>(`/suggestions?${params.toString()}`);
 }
 
 // Content APIs
@@ -168,18 +170,18 @@ export async function uploadContentWithFile(formData: FormData) {
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const response = await fetch(`${API_URL}/content/upload-file`, {
     method: 'POST',
     headers,
     body: formData,
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
     throw new Error(error.detail || 'Upload failed');
   }
-  
+
   return response.json();
 }
 
@@ -191,13 +193,15 @@ export async function uploadFileToCloudinary(data: {
   description?: string;
   language?: string;
   help_request_id?: string;
+  subject?: string;
+  grade?: string;
 }) {
   const token = getAuthToken();
   const headers: HeadersInit = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   const formData = new FormData();
   formData.append('file', data.file);
   formData.append('title', data.title);
@@ -206,18 +210,20 @@ export async function uploadFileToCloudinary(data: {
   if (data.description) formData.append('description', data.description);
   if (data.language) formData.append('language', data.language);
   if (data.help_request_id) formData.append('help_request_id', data.help_request_id);
-  
+  if (data.subject) formData.append('subject', data.subject);
+  if (data.grade) formData.append('grade', data.grade);
+
   const response = await fetch(`${API_URL}/content/upload-file`, {
     method: 'POST',
     headers,
     body: formData,
   });
-  
+
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
     throw new Error(error.detail || 'Upload failed');
   }
-  
+
   return response.json();
 }
 
@@ -320,16 +326,16 @@ export async function createTopicWithTranslations(
     synonyms_added: number;
   }>('/ai/create-topic', {
     method: 'POST',
-    body: JSON.stringify({ 
-      topic_id: topicId, 
+    body: JSON.stringify({
+      topic_id: topicId,
       topic_name: topicName,
       topic_name_hi: topicNameHi,
       topic_name_kn: topicNameKn,
       synonyms_en: synonymsEn || [],
       synonyms_hi: synonymsHi || [],
       synonyms_kn: synonymsKn || [],
-      subject, 
-      grade 
+      subject,
+      grade
     })
   });
 }

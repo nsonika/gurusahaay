@@ -82,9 +82,10 @@ class ContentService:
         if any_verified:
             return (any_verified, "internal")
         
-        # Step 3: Fall back to unverified content (external)
-        unverified = db.query(UploadedContent).filter(
-            UploadedContent.concept_id == concept_id
+        # Step 3: Fall back to unverified content (Internal first)
+        unverified_internal = db.query(UploadedContent).filter(
+            UploadedContent.concept_id == concept_id,
+            UploadedContent.source_type == "internal"
         ).order_by(
             case(
                 (UploadedContent.language == teacher_language, 0),
@@ -93,40 +94,76 @@ class ContentService:
             desc(UploadedContent.created_at)
         ).limit(limit).all()
         
-        if unverified:
-            return (unverified, "external_fallback")
+        if unverified_internal:
+            return (unverified_internal, "internal_unverified")
+            
+        # Step 4: Fall back to unverified external content
+        unverified_external = db.query(UploadedContent).filter(
+            UploadedContent.concept_id == concept_id,
+            UploadedContent.source_type == "external"
+        ).order_by(
+            case(
+                (UploadedContent.language == teacher_language, 0),
+                else_=1
+            ),
+            desc(UploadedContent.created_at)
+        ).limit(limit).all()
+        
+        if unverified_external:
+            return (unverified_external, "external_fallback")
         
         # Step 4: Use Google Web Search via Gemini to find external content
         print(f"[ContentService] No content found for '{concept_id}', trying Google Web Search...")
         search_results = GeminiService.google_web_search(concept_id.replace("_", " "), num_results=5)
         
         if search_results:
-            # Create temporary content entries from search results
+            # Create/Get content entries from search results
             web_content = []
             for result in search_results:
-                # Determine content type from URL
                 url = result.get("url", "")
+                if not url:
+                    continue
+
+                # Check if URL already exists in DB to prevent duplicates
+                existing_content = db.query(UploadedContent).filter(
+                    UploadedContent.content_url == url
+                ).first()
+                
+                if existing_content:
+                    web_content.append(existing_content)
+                    continue
+
+                # Determine content type from URL
                 content_type = "article"
                 if "youtube.com" in url or "youtu.be" in url:
                     content_type = "video"
                 elif url.endswith(".pdf"):
                     content_type = "document"
                 
-                # Create a temporary UploadedContent object (not saved to DB)
-                temp_content = UploadedContent(
-                    id=uuid.uuid4(),
+                # Persist new content (without specific uploader)
+                new_content = UploadedContent(
+                    id=uuid.uuid4(), # Explicitly setting UUID or letting DB handle it
                     title=result.get("title", "External Resource"),
                     description=result.get("snippet", "Found via Google Search"),
                     content_type=content_type,
-                    file_url=url,
+                    content_url=url,
                     concept_id=concept_id,
-                    language="en",
+                    language="en", # Default to English for external content
                     source_type="external",
-                    is_verified=False
+                    is_verified=False,
+                    # uploaded_by remains None for system-generated content
                 )
-                web_content.append(temp_content)
+                
+                try:
+                    db.add(new_content)
+                    db.commit()
+                    db.refresh(new_content)
+                    web_content.append(new_content)
+                except Exception as e:
+                    print(f"[ContentService] Failed to save search result {url}: {e}")
+                    db.rollback()
             
-            print(f"[ContentService] Found {len(web_content)} results from Google Web Search")
+            print(f"[ContentService] Found/Persisted {len(web_content)} results from Google Web Search")
             return (web_content, "google_search")
         
         # No content found at all
@@ -191,8 +228,11 @@ class ContentService:
                 "source": source
             })
         
-        # Sort by feedback score (descending)
-        results.sort(key=lambda x: x["feedback_score"], reverse=True)
+        # Sort by language match (primary) and feedback score (secondary)
+        results.sort(
+            key=lambda x: (x["content"].language == teacher_language, x["feedback_score"]), 
+            reverse=True
+        )
         return results
     
     @staticmethod

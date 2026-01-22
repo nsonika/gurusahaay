@@ -20,7 +20,8 @@ load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 # Fallback models in order of preference (only available models)
-GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-001", "gemini-2.0-flash-exp"]
+# Fallback models in order of preference
+GEMINI_MODELS = ["gemini-flash-latest", "gemini-2.5-flash-lite", "gemini-2.0-flash-exp"]
 
 
 class GeminiService:
@@ -30,25 +31,17 @@ class GeminiService:
     def is_available() -> bool:
         """Check if Gemini API is configured."""
         return bool(GEMINI_API_KEY)
-    
+
     @staticmethod
-    def _call_gemini(prompt: str, retries: int = 2) -> str:
-        """Make HTTP request to Gemini API with fallback models and retry logic."""
+    def _make_gemini_request(data: dict, tool_config: dict = None, retries: int = 2) -> dict:
+        """Generic method to call Gemini API with fallbacks."""
         import time
         
-        headers = {
-            "Content-Type": "application/json"
-        }
-        
-        data = {
-            "contents": [{
-                "parts": [{"text": prompt}]
-            }]
-        }
-        
         last_error = None
+        headers = {"Content-Type": "application/json"}
         
         for model in GEMINI_MODELS:
+            print(f"[GeminiService] Trying model: {model}")
             for attempt in range(retries + 1):
                 try:
                     url = f"{GEMINI_BASE_URL}/{model}:generateContent?key={GEMINI_API_KEY}"
@@ -60,31 +53,48 @@ class GeminiService:
                     )
                     
                     if response.status_code == 200:
-                        result = response.json()
-                        return result["candidates"][0]["content"]["parts"][0]["text"]
+                        return response.json()
                     elif response.status_code == 503:
-                        # Model overloaded, wait and retry or try next model
                         last_error = f"Model {model} overloaded"
+                        print(f"[GeminiService] {last_error}")
                         if attempt < retries:
-                            time.sleep(1)  # Wait 1 second before retry
+                            time.sleep(1)
                             continue
-                        break  # Try next model
+                        break
                     elif response.status_code == 429:
-                        # Quota exceeded, try next model
                         last_error = f"Model {model} quota exceeded"
+                        print(f"[GeminiService] {last_error}")
                         break
                     else:
-                        last_error = f"Gemini API error: {response.status_code} - {response.text}"
+                        last_error = f"Gemini API error ({model}): {response.status_code} - {response.text}"
+                        print(f"[GeminiService] {last_error}")
                         break
                 except requests.exceptions.Timeout:
                     last_error = f"Model {model} timeout"
+                    print(f"[GeminiService] {last_error}")
                     break
                 except Exception as e:
                     last_error = str(e)
+                    print(f"[GeminiService] Exception ({model}): {last_error}")
                     break
         
         raise Exception(last_error or "All Gemini models failed")
-    
+
+    @staticmethod
+    def _call_gemini(prompt: str, retries: int = 2) -> str:
+        """Make HTTP request to Gemini API with fallback models and retry logic."""
+        data = {
+            "contents": [{
+                "parts": [{"text": prompt}]
+            }]
+        }
+        
+        try:
+            result = GeminiService._make_gemini_request(data, retries=retries)
+            return result["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as e:
+            raise e
+
     @staticmethod
     def google_web_search(query: str, num_results: int = 5) -> List[dict]:
         """
@@ -97,10 +107,6 @@ class GeminiService:
             return []
         
         try:
-            headers = {
-                "Content-Type": "application/json"
-            }
-            
             # Use google_search tool with Gemini
             data = {
                 "contents": [{
@@ -111,57 +117,47 @@ class GeminiService:
                 }]
             }
             
-            # Try with gemini-2.0-flash model which supports grounding
-            url = f"{GEMINI_BASE_URL}/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-            response = requests.post(
-                url,
-                headers=headers,
-                json=data,
-                timeout=30
-            )
+            result = GeminiService._make_gemini_request(data)
             
-            if response.status_code == 200:
-                result = response.json()
+            # Extract grounding metadata if available
+            candidates = result.get("candidates", [])
+            if candidates:
+                candidate = candidates[0]
+                grounding_metadata = candidate.get("groundingMetadata", {})
+                grounding_chunks = grounding_metadata.get("groundingChunks", [])
                 
-                # Extract grounding metadata if available
-                candidates = result.get("candidates", [])
-                if candidates:
-                    candidate = candidates[0]
-                    grounding_metadata = candidate.get("groundingMetadata", {})
-                    grounding_chunks = grounding_metadata.get("groundingChunks", [])
-                    
-                    search_results = []
-                    for chunk in grounding_chunks[:num_results]:
-                        web_info = chunk.get("web", {})
-                        if web_info:
-                            search_results.append({
-                                "title": web_info.get("title", ""),
-                                "url": web_info.get("uri", ""),
-                                "snippet": ""
-                            })
-                    
-                    # If we got grounding results, return them
+                search_results = []
+                for chunk in grounding_chunks[:num_results]:
+                    web_info = chunk.get("web", {})
+                    if web_info:
+                        search_results.append({
+                            "title": web_info.get("title", ""),
+                            "url": web_info.get("uri", ""),
+                            "snippet": ""
+                        })
+                
+                # If we got grounding results, return them
+                if search_results:
+                    print(f"[GeminiService] Google Search found {len(search_results)} results for '{query}'")
+                    return search_results
+                
+                # Otherwise, parse the text response
+                text_response = candidate.get("content", {}).get("parts", [{}])[0].get("text", "")
+                if text_response:
+                    # Try to extract URLs from the response
+                    import re
+                    urls = re.findall(r'https?://[^\s\)\"\']+', text_response)
+                    for i, url_found in enumerate(urls[:num_results]):
+                        search_results.append({
+                            "title": f"Resource {i+1}",
+                            "url": url_found,
+                            "snippet": ""
+                        })
                     if search_results:
-                        print(f"[GeminiService] Google Search found {len(search_results)} results for '{query}'")
+                        print(f"[GeminiService] Extracted {len(search_results)} URLs from response")
                         return search_results
-                    
-                    # Otherwise, parse the text response
-                    text_response = candidate.get("content", {}).get("parts", [{}])[0].get("text", "")
-                    if text_response:
-                        # Try to extract URLs from the response
-                        import re
-                        urls = re.findall(r'https?://[^\s\)\"\']+', text_response)
-                        for i, url_found in enumerate(urls[:num_results]):
-                            search_results.append({
-                                "title": f"Resource {i+1}",
-                                "url": url_found,
-                                "snippet": ""
-                            })
-                        if search_results:
-                            print(f"[GeminiService] Extracted {len(search_results)} URLs from response")
-                            return search_results
             
-            print(f"[GeminiService] Google Search failed: {response.status_code}")
+            print("[GeminiService] Google Search returned no candidates")
             return []
             
         except Exception as e:

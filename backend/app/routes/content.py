@@ -309,6 +309,8 @@ async def upload_file_to_cloudinary(
     description: str = Form(""),
     language: str = Form("en"),
     help_request_id: str = Form(None),  # Optional: ID of help request being responded to
+    subject: str = Form(None),
+    grade: str = Form(None),
     db: Session = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher)
 ):
@@ -373,8 +375,8 @@ async def upload_file_to_cloudinary(
             description=description,
             content_type=content_type,
             language=language,
-            subject=concept.subject,
-            grade=concept.grade
+            subject=subject or concept.subject,
+            grade=grade or concept.grade
         )
         
         # Award points for upload

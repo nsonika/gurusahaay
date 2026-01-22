@@ -538,7 +538,7 @@ def seed_sample_content():
             content_type=content_data["content_type"],
             content_url=content_data.get("content_url"),
             language=content_data["language"],
-            source_type=content_data.get("source_type", "internal"),
+            source_type=content_data.get("source_type", "external"),
             is_verified=content_data["is_verified"],
             subject="pedagogy" if "CLASSROOM" in content_data["concept_id"] else "science",
         )

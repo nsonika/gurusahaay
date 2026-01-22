@@ -24,6 +24,16 @@ export default function UploadPage() {
   const [helpRequests, setHelpRequests] = useState<HelpRequestDetail[]>([]);
   const [loadingHelp, setLoadingHelp] = useState(true);
   const [selectedHelpRequestId, setSelectedHelpRequestId] = useState<string | null>(null);
+  const [grade, setGrade] = useState('All');
+  const [subject, setSubject] = useState('Other');
+  const [contentLanguage, setContentLanguage] = useState(user?.language_preference || 'en');
+
+  // Update language when user changes
+  useEffect(() => {
+    if (user?.language_preference) {
+      setContentLanguage(user.language_preference);
+    }
+  }, [user]);
 
   useEffect(() => {
     checkCloudinary();
@@ -109,8 +119,10 @@ export default function UploadPage() {
         concept_id: finalConceptId,
         content_type: contentType,
         description: description.trim(),
-        language: user?.language_preference || 'en',
+        language: contentLanguage,
         help_request_id: selectedHelpRequestId || undefined,
+        subject: subject,
+        grade: grade,
       });
 
       router.push('/');
@@ -132,6 +144,12 @@ export default function UploadPage() {
       setSelectedHelpRequestId(request.id);
       if (request.concept_id) {
         setConceptId(request.concept_id);
+      }
+      if (request.subject) {
+        setSubject(request.subject);
+      }
+      if (request.grade) {
+        setGrade(request.grade);
       }
       setTitle(request.original_query_text);
     }
@@ -336,6 +354,67 @@ export default function UploadPage() {
 
 
 
+
+        {/* Grade Selection */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-3">Grade *</label>
+          <div className="flex flex-wrap gap-2">
+            {['1-2', '3-5', '6-8', '9-10', '11-12', 'All'].map((g) => (
+              <button
+                key={g}
+                onClick={() => setGrade(g)}
+                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${grade === g
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+                  }`}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Subject Selection */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium text-gray-700 mb-4">Subject *</label>
+          <div className="flex flex-wrap gap-2">
+            {['Math', 'Science', 'English', 'Social Studies', 'Languages', 'Other'].map((s) => (
+              <button
+                key={s}
+                onClick={() => setSubject(s)}
+                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${subject === s
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+                  }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Content Language */}
+        <div className="mb-8">
+          <label className="block text-sm font-medium text-gray-700 mb-4">Content Language *</label>
+          <div className="flex gap-3">
+            {[
+              { id: 'en', label: 'English' },
+              { id: 'hi', label: 'हिंदी' },
+              { id: 'kn', label: 'ಕನ್ನಡ' }
+            ].map((lang) => (
+              <button
+                key={lang.id}
+                onClick={() => setContentLanguage(lang.id)}
+                className={`px-6 py-2.5 rounded-full text-sm font-medium transition-all ${contentLanguage === lang.id
+                  ? 'bg-orange-500 text-white shadow-md shadow-orange-200'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 border border-transparent'
+                  }`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Description Input */}
         <div className="bg-white rounded-2xl p-4 border mb-4">

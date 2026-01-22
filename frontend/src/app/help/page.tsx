@@ -82,7 +82,8 @@ export default function HelpPage() {
       const helpRequest = await createHelpRequest(requestData);
 
       if (helpRequest.concept_id) {
-        router.push(`/suggestions?concept_id=${helpRequest.concept_id}&summary=${encodeURIComponent(customProblem || selectedProblem)}`);
+        const langParam = helpRequest.detected_language ? `&lang=${helpRequest.detected_language}` : '';
+        router.push(`/suggestions?concept_id=${helpRequest.concept_id}&summary=${encodeURIComponent(customProblem || selectedProblem)}${langParam}`);
       } else {
         setError(t('help.submitError') || 'Could not understand your question. Please try again.');
       }
@@ -139,8 +140,8 @@ export default function HelpPage() {
                   setCustomProblem('');
                 }}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${isSelected
-                    ? 'border-orange-300 bg-orange-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                  ? 'border-orange-300 bg-orange-50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
               >
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? 'bg-orange-100' : 'bg-gray-100'
@@ -204,8 +205,8 @@ export default function HelpPage() {
           onClick={handleSubmit}
           disabled={loading || (!selectedProblem && !customProblem.trim() && !audioBase64)}
           className={`w-full py-4 rounded-2xl font-medium transition-all flex items-center justify-center gap-2 ${(selectedProblem || customProblem.trim() || audioBase64)
-              ? 'bg-orange-500 hover:bg-orange-600 text-white'
-              : 'bg-orange-200 text-orange-400 cursor-not-allowed'
+            ? 'bg-orange-500 hover:bg-orange-600 text-white'
+            : 'bg-orange-200 text-orange-400 cursor-not-allowed'
             }`}
         >
           {loading ? (

@@ -28,6 +28,7 @@ router = APIRouter(prefix="/suggestions", tags=["Suggestions"])
 @router.get("", response_model=SuggestionResponse)
 def get_suggestions(
     concept_id: str = Query(..., description="The resolved concept ID"),
+    language: Optional[str] = Query(None, description="Language override"),
     limit: int = Query(10, ge=1, le=50),
     db: Session = Depends(get_db),
     current_teacher: Teacher = Depends(get_current_teacher)
@@ -56,11 +57,14 @@ def get_suggestions(
             detail=f"Concept '{concept_id}' not found"
         )
     
+    # Use provided language or fall back to teacher's preference
+    target_lang = language or current_teacher.language_preference
+
     # Get suggestions - first try with scores, then fallback to raw suggestions
     results = ContentService.get_content_with_scores(
         db,
         concept_id,
-        current_teacher.language_preference,
+        target_lang,
         limit
     )
     
@@ -94,7 +98,7 @@ def get_suggestions(
         content_list, source = ContentService.get_suggestions(
             db,
             concept_id,
-            current_teacher.language_preference,
+            target_lang,
             limit
         )
         for content in content_list:
@@ -121,6 +125,8 @@ def get_suggestions(
         message = "Found via Google Search – External resources"
     elif source == "external_fallback":
         message = "Suggested – Not yet verified by mentors"
+    elif source == "internal_unverified":
+        message = "Found limited suggestions"
     elif not suggestions:
         message = "No content found for this topic. Consider uploading your own!"
     
