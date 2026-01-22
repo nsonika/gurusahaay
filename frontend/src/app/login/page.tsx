@@ -32,7 +32,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-gradient-to-b from-primary-50 to-white">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -99,12 +99,6 @@ export default function LoginPage() {
           </Link>
         </p>
 
-        {/* Demo credentials */}
-        <div className="mt-8 p-4 bg-gray-100 rounded-lg text-center text-sm">
-          <p className="text-gray-600 font-medium">Demo Credentials</p>
-          <p className="text-gray-500 mt-1">Phone: 9999999999</p>
-          <p className="text-gray-500">Password: demo123</p>
-        </div>
       </div>
     </div>
   );
