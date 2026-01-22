@@ -137,7 +137,6 @@ export default function HelpPage() {
                 key={problem.id}
                 onClick={() => {
                   setSelectedProblem(isSelected ? '' : problem.id);
-                  setCustomProblem('');
                 }}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${isSelected
                   ? 'border-orange-300 bg-orange-50'
@@ -170,7 +169,6 @@ export default function HelpPage() {
               value={customProblem}
               onChange={(e) => {
                 setCustomProblem(e.target.value);
-                setSelectedProblem('');
               }}
               placeholder={t('help.placeholder') || 'photosynthesis'}
               className="w-full p-4 border-2 border-amber-200 rounded-2xl bg-amber-50 resize-none h-24 focus:outline-none focus:border-amber-300"
