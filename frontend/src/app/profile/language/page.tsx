@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { updateLanguagePreference } from '@/lib/api';
-import { Check } from 'lucide-react';
+import { Check, GraduationCap } from 'lucide-react';
 
 export default function LanguageSelectionPage() {
     const { user, refreshUser } = useAuth();
@@ -45,8 +45,8 @@ export default function LanguageSelectionPage() {
                 {/* Logo & Header */}
                 <div className="text-center mb-10">
                     {/* Logo */}
-                    <div className="w-24 h-24 rounded-[28px] bg-orange-500 flex items-center justify-center mx-auto mb-6 shadow-md">
-                        <span className="text-5xl font-bold text-white">गु</span>
+                    <div className="w-24 h-24 rounded-[28px] bg-primary-600 flex items-center justify-center mx-auto mb-6 shadow-md">
+                        <GraduationCap className="w-14 h-14 text-white" />
                     </div>
 
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">GuruSahaay</h1>
