@@ -113,7 +113,7 @@ export default function UploadPage() {
         help_request_id: selectedHelpRequestId || undefined,
       });
 
-      router.push('/community?tab=uploads');
+      router.push('/');
     } catch (err) {
       console.error('Upload flow failed:', err);
       setError(err instanceof Error ? err.message : 'Upload failed');

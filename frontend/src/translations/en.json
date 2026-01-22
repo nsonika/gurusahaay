@@ -68,7 +68,20 @@
     "totalPoints": "Total Points",
     "pointsEarned": "Points Earned",
     "rewardPoints": "Reward Points",
-    "savingLanguage": "Saving..."
+    "savingLanguage": "Saving...",
+    "stats": {
+      "solutionsTried": "Solutions tried",
+      "feedbackGiven": "Feedback given",
+      "contentShared": "Content shared",
+      "teachersHelped": "Teachers helped"
+    },
+    "earnPoints": {
+      "title": "How to Earn Points",
+      "uploadContent": "Upload content",
+      "contentVerified": "Content gets verified",
+      "contentHelps": "Content helps someone",
+      "giveFeedback": "Give feedback"
+    }
   },
   "upload": {
     "title": "Upload Content",
@@ -116,13 +129,29 @@
   },
   "help": {
     "title": "Get Help",
+    "needHelpNow": "Need Help Now",
+    "aiSuggestionBanner": "AI-powered suggestions - Instant solutions for your problem!",
+    "whatProblem": "What problem are you facing?",
+    "categories": {
+      "discipline": "Discipline / Classroom Noise",
+      "concept": "Concept Not Understood",
+      "engagement": "Student Engagement Low",
+      "other": "Other"
+    },
+    "describeProblem": "and describe your problem",
+    "orDescribe": "Or describe your problem",
+    "placeholder": "photosynthesis",
+    "getSuggestions": "Get Suggestions",
+    "findingSuggestions": "Finding suggestions...",
     "askQuestion": "Ask a Question",
     "selectCategory": "Select Category",
     "questionPlaceholder": "Describe your question or problem...",
     "submitQuestion": "Submit Question",
     "submitting": "Submitting...",
     "submitSuccess": "Question submitted successfully!",
-    "submitError": "Failed to submit question. Please try again."
+    "submitError": "Failed to submit question. Please try again.",
+    "selectProblemError": "Please select a problem or describe your issue",
+    "failedProcess": "Failed to process request"
   },
   "languages": {
     "en": "English",

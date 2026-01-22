@@ -6,25 +6,27 @@ import { useAuth } from '@/context/AuthContext';
 import VoiceButton from '@/components/VoiceButton';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { createHelpRequest } from '@/lib/api';
+import { useTranslation } from '@/hooks/useTranslation';
 import { Loader2, Volume2, MessageSquare, Users, Sparkles, Send, MoreHorizontal } from 'lucide-react';
 
 // Predefined problem categories
 const problemCategories = [
-  { id: 'CLASSROOM_DISCIPLINE', icon: Volume2, label: 'Discipline / Classroom Noise' },
-  { id: 'CLASSROOM_ATTENTION', icon: MessageSquare, label: 'Concept Not Understood' },
-  { id: 'CLASSROOM_SLOW_LEARNERS', icon: Users, label: 'Student Engagement Low' },
-  { id: 'OTHER', icon: MoreHorizontal, label: 'Other' },
+  { id: 'CLASSROOM_DISCIPLINE', icon: Volume2, i18nKey: 'categories.discipline' },
+  { id: 'CLASSROOM_ATTENTION', icon: MessageSquare, i18nKey: 'categories.concept' },
+  { id: 'CLASSROOM_SLOW_LEARNERS', icon: Users, i18nKey: 'categories.engagement' },
+  { id: 'OTHER', icon: MoreHorizontal, i18nKey: 'categories.other' },
 ];
 
 export default function HelpPage() {
   const { user } = useAuth();
   const router = useRouter();
-  
+  const { t } = useTranslation();
+
   const [selectedProblem, setSelectedProblem] = useState('');
   const [customProblem, setCustomProblem] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   const { isRecording, audioBase64, startRecording, stopRecording } = useVoiceRecorder();
 
   // Auto-submit when audio is ready
@@ -40,15 +42,15 @@ export default function HelpPage() {
 
     try {
       const queryText = selectedProblem || customProblem;
-      
+
       if (!queryText.trim() && !audioBase64) {
-        setError('Please select a problem or describe your issue');
+        setError(t('help.selectProblemError') || 'Please select a problem or describe your issue');
         setLoading(false);
         return;
       }
 
       let requestData: Parameters<typeof createHelpRequest>[0];
-      
+
       if (audioBase64) {
         requestData = {
           audio_base64: audioBase64,
@@ -78,14 +80,14 @@ export default function HelpPage() {
       }
 
       const helpRequest = await createHelpRequest(requestData);
-      
+
       if (helpRequest.concept_id) {
         router.push(`/suggestions?concept_id=${helpRequest.concept_id}&summary=${encodeURIComponent(customProblem || selectedProblem)}`);
       } else {
-        setError('Could not understand your question. Please try again.');
+        setError(t('help.submitError') || 'Could not understand your question. Please try again.');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process request');
+      setError(err instanceof Error ? err.message : (t('help.failedProcess') || 'Failed to process request'));
     } finally {
       setLoading(false);
     }
@@ -102,12 +104,12 @@ export default function HelpPage() {
             </svg>
           </button>
           <h1 className="text-lg font-semibold flex items-center gap-2">
-            Need Help Now
+            {t('help.needHelpNow') || 'Need Help Now'}
             <Sparkles className="w-5 h-5 text-orange-500" />
           </h1>
         </div>
       </div>
-      
+
       <main className="max-w-lg mx-auto px-4 py-6">
         {/* AI Banner */}
         <div className="bg-green-50 rounded-2xl p-4 mb-6 border border-green-100">
@@ -116,19 +118,19 @@ export default function HelpPage() {
               <Sparkles className="w-4 h-4 text-green-600" />
             </div>
             <p className="text-sm text-green-800">
-              AI-powered suggestions - Instant solutions for your problem!
+              {t('help.aiSuggestionBanner') || 'AI-powered suggestions - Instant solutions for your problem!'}
             </p>
           </div>
         </div>
 
         {/* Problem Selection */}
-        <p className="text-gray-700 font-medium mb-4">What problem are you facing?</p>
-        
+        <p className="text-gray-700 font-medium mb-4">{t('help.whatProblem') || 'What problem are you facing?'}</p>
+
         <div className="space-y-3 mb-6">
           {problemCategories.map((problem) => {
             const Icon = problem.icon;
             const isSelected = selectedProblem === problem.id;
-            
+
             return (
               <button
                 key={problem.id}
@@ -136,19 +138,17 @@ export default function HelpPage() {
                   setSelectedProblem(isSelected ? '' : problem.id);
                   setCustomProblem('');
                 }}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${
-                  isSelected
+                className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 transition-all ${isSelected
                     ? 'border-orange-300 bg-orange-50'
                     : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
+                  }`}
               >
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  isSelected ? 'bg-orange-100' : 'bg-gray-100'
-                }`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isSelected ? 'bg-orange-100' : 'bg-gray-100'
+                  }`}>
                   <Icon className={`w-5 h-5 ${isSelected ? 'text-orange-600' : 'text-gray-500'}`} />
                 </div>
                 <span className={`font-medium ${isSelected ? 'text-gray-900' : 'text-gray-700'}`}>
-                  {problem.label}
+                  {t(`help.${problem.i18nKey}`)}
                 </span>
               </button>
             );
@@ -158,7 +158,7 @@ export default function HelpPage() {
         {/* Divider */}
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 h-px bg-gray-200" />
-          <span className="text-sm text-gray-400">and describe your problem</span>
+          <span className="text-sm text-gray-400">{t('help.describeProblem') || 'and describe your problem'}</span>
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
@@ -171,7 +171,7 @@ export default function HelpPage() {
                 setCustomProblem(e.target.value);
                 setSelectedProblem('');
               }}
-              placeholder="photosyentesis"
+              placeholder={t('help.placeholder') || 'photosynthesis'}
               className="w-full p-4 border-2 border-amber-200 rounded-2xl bg-amber-50 resize-none h-24 focus:outline-none focus:border-amber-300"
               maxLength={500}
             />
@@ -179,7 +179,7 @@ export default function HelpPage() {
               {customProblem.length}/500
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-2 text-center">Or describe your problem</p>
+          <p className="text-sm text-gray-500 mt-2 text-center">{t('help.orDescribe') || 'Or describe your problem'}</p>
         </div>
 
         {/* Voice Button */}
@@ -203,21 +203,20 @@ export default function HelpPage() {
         <button
           onClick={handleSubmit}
           disabled={loading || (!selectedProblem && !customProblem.trim() && !audioBase64)}
-          className={`w-full py-4 rounded-2xl font-medium transition-all flex items-center justify-center gap-2 ${
-            (selectedProblem || customProblem.trim() || audioBase64)
+          className={`w-full py-4 rounded-2xl font-medium transition-all flex items-center justify-center gap-2 ${(selectedProblem || customProblem.trim() || audioBase64)
               ? 'bg-orange-500 hover:bg-orange-600 text-white'
               : 'bg-orange-200 text-orange-400 cursor-not-allowed'
-          }`}
+            }`}
         >
           {loading ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Finding suggestions...
+              {t('help.findingSuggestions') || 'Finding suggestions...'}
             </>
           ) : (
             <>
               <Send className="w-5 h-5" />
-              Get Suggestions
+              {t('help.getSuggestions') || 'Get Suggestions'}
             </>
           )}
         </button>

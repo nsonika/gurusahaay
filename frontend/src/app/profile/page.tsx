@@ -107,10 +107,10 @@ export default function ProfilePage() {
           {/* Solutions Tried */}
           <div className="bg-white rounded-2xl p-6 text-center shadow-sm">
             <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
-              <Video className="w-6 h-6 text-blue-600" />
+              <Video className="w-6 h-6 text-blue-100" />
             </div>
             <p className="text-3xl font-bold text-gray-900 mb-1">{stats.solutionsTried}</p>
-            <p className="text-xs text-gray-500">Solutions tried</p>
+            <p className="text-xs text-gray-500">{t('profile.stats.solutionsTried') || 'Solutions tried'}</p>
           </div>
 
           {/* Feedback Given */}
@@ -119,7 +119,7 @@ export default function ProfilePage() {
               <MessageCircle className="w-6 h-6 text-green-600" />
             </div>
             <p className="text-3xl font-bold text-gray-900 mb-1">{stats.feedbackGiven}</p>
-            <p className="text-xs text-gray-500">Feedback given</p>
+            <p className="text-xs text-gray-500">{t('profile.stats.feedbackGiven') || 'Feedback given'}</p>
           </div>
 
           {/* Content Shared */}
@@ -128,7 +128,7 @@ export default function ProfilePage() {
               <UploadIcon className="w-6 h-6 text-orange-600" />
             </div>
             <p className="text-3xl font-bold text-gray-900 mb-1">{stats.contentShared}</p>
-            <p className="text-xs text-gray-500">Content shared</p>
+            <p className="text-xs text-gray-500">{t('profile.stats.contentShared') || 'Content shared'}</p>
           </div>
 
           {/* Teachers Helped */}
@@ -137,30 +137,30 @@ export default function ProfilePage() {
               <Heart className="w-6 h-6 text-red-600" />
             </div>
             <p className="text-3xl font-bold text-gray-900 mb-1">{stats.teachersHelped}</p>
-            <p className="text-xs text-gray-500">Teachers helped</p>
+            <p className="text-xs text-gray-500">{t('profile.stats.teachersHelped') || 'Teachers helped'}</p>
           </div>
         </div>
 
         {/* Points & Rewards */}
         {/* How to Earn Points */}
         <div className="bg-white rounded-3xl shadow-sm p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">How to Earn Points</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">{t('profile.earnPoints.title') || 'How to Earn Points'}</h3>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-gray-600 font-medium">Upload content</span>
+              <span className="text-gray-600 font-medium">{t('profile.earnPoints.uploadContent') || 'Upload content'}</span>
               <span className="text-primary-600 font-bold">+10 pts</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600 font-medium">Content gets verified</span>
+              <span className="text-gray-600 font-medium">{t('profile.earnPoints.contentVerified') || 'Content gets verified'}</span>
               <span className="text-primary-600 font-bold">+20 pts</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600 font-medium">Content helps someone</span>
+              <span className="text-gray-600 font-medium">{t('profile.earnPoints.contentHelps') || 'Content helps someone'}</span>
               <span className="text-primary-600 font-bold">+5 pts</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600 font-medium">Give feedback</span>
+              <span className="text-gray-600 font-medium">{t('profile.earnPoints.giveFeedback') || 'Give feedback'}</span>
               <span className="text-primary-600 font-bold">+2 pts</span>
             </div>
           </div>

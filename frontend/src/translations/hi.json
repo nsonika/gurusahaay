@@ -68,7 +68,20 @@
         "totalPoints": "कुल अंक",
         "pointsEarned": "अर्जित अंक",
         "rewardPoints": "पुरस्कार अंक",
-        "savingLanguage": "सहेजा जा रहा है..."
+        "savingLanguage": "सहेजा जा रहा है...",
+        "stats": {
+            "solutionsTried": "समाधान आजमाए गए",
+            "feedbackGiven": "फीडबैक दिया",
+            "contentShared": "सामग्री साझा की",
+            "teachersHelped": "शिक्षकों की मदद की"
+        },
+        "earnPoints": {
+            "title": "अंक कैसे अर्जित करें",
+            "uploadContent": "सामग्री अपलोड करें",
+            "contentVerified": "सामग्री सत्यापित हुई",
+            "contentHelps": "सामग्री किसी की मदद करती है",
+            "giveFeedback": "फीडबैक दें"
+        }
     },
     "upload": {
         "title": "सामग्री अपलोड करें",
@@ -116,13 +129,29 @@
     },
     "help": {
         "title": "मदद लें",
+        "needHelpNow": "अभी मदद चाहिए",
+        "aiSuggestionBanner": "AI-संचालित सुझाव - आपकी समस्या का त्वरित समाधान!",
+        "whatProblem": "आप किस समस्या का सामना कर रहे हैं?",
+        "categories": {
+            "discipline": "अनुशासन / कक्षा में शोर",
+            "concept": "अवधारणा समझ में नहीं आई",
+            "engagement": "छात्रों की रुचि कम है",
+            "other": "अन्य"
+        },
+        "describeProblem": "और अपनी समस्या का वर्णन करें",
+        "orDescribe": "या अपनी समस्या का वर्णन करें",
+        "placeholder": "प्रकाश संश्लेषण",
+        "getSuggestions": "सुझाव प्राप्त करें",
+        "findingSuggestions": "सुझाव खोज रहे हैं...",
         "askQuestion": "प्रश्न पूछें",
         "selectCategory": "श्रेणी चुनें",
         "questionPlaceholder": "अपने प्रश्न या समस्या का वर्णन करें...",
         "submitQuestion": "प्रश्न सबमिट करें",
         "submitting": "सबमिट हो रहा है...",
         "submitSuccess": "प्रश्न सफलतापूर्वक सबमिट किया गया!",
-        "submitError": "प्रश्न सबमिट करने में विफल। कृपया पुनः प्रयास करें।"
+        "submitError": "प्रश्न सबमिट करने में विफल। कृपया पुनः प्रयास करें。",
+        "selectProblemError": "कृपया किसी समस्या का चयन करें या अपनी समस्या का वर्णन करें",
+        "failedProcess": "अनुरोध को संसाधित करने में विफल"
     },
     "languages": {
         "en": "English",

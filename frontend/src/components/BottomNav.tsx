@@ -10,6 +10,13 @@ export default function BottomNav() {
   const pathname = usePathname();
   const { t } = useTranslation();
 
+  // Hide bottom nav on specific pages
+  if (pathname?.startsWith('/login') ||
+    pathname?.startsWith('/register') ||
+    pathname?.startsWith('/profile/language')) {
+    return null;
+  }
+
   const navItems = [
     { href: '/', icon: Home, labelKey: 'common.home' },
     { href: '/help', icon: HelpCircle, labelKey: 'common.help' },

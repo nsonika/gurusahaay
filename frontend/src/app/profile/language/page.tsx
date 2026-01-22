@@ -31,9 +31,8 @@ export default function LanguageSelectionPage() {
         try {
             await updateLanguagePreference(selectedLang);
             await refreshUser();
-            router.push('/profile');
-            // Reload to apply new translations
-            window.location.reload();
+            // Hard navigate to profile to apply new translations
+            window.location.href = '/profile';
         } catch (error) {
             console.error('Failed to update language:', error);
             setSaving(false);
