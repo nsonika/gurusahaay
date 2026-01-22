@@ -8,6 +8,13 @@ export const metadata: Metadata = {
   title: 'GuruSahaay - Teacher Support',
   description: 'Just-in-time classroom support for teachers',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  manifest: '/manifest.json',
+  themeColor: '#ea580c',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'GuruSahaay',
+  },
 }
 
 export default function RootLayout({
